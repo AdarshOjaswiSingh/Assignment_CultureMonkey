@@ -76,23 +76,6 @@ def upload_data():
         except Exception as e:
             st.error(f"❌ Error processing file: {e}")
 
-# ========== Load Predefined Interview Questions ==========
-def load_database():
-    try:
-        if os.path.exists(DB_PATH):
-            df = pd.read_excel(DB_PATH, engine='openpyxl')
-            df.columns = df.columns.str.strip()
-            if not all(col in df.columns for col in ["job_title", "job_description_text"]):
-                st.error("❌ Excel format error: Expected 'job_title' and 'job_description_text' columns.")
-                return pd.DataFrame(columns=["job_title", "job_description_text"])
-            return df
-        else:
-            st.warning("⚠️ Database not found! Initializing empty one.")
-            return pd.DataFrame(columns=["job_title", "job_description_text"])
-    except Exception as e:
-        st.error(f"❌ Error loading database: {e}")
-        return pd.DataFrame()
-
 # ========== Resume to Role Matching ==========
 def match_resume_to_roles(resume_text, job_df, top_n=3):
     if job_df.empty or "job_description_text" not in job_df.columns or "job_title" not in job_df.columns:
@@ -141,12 +124,25 @@ def main():
             upload_data()
         with col2:
             st.subheader("🎤 Interview Mode")
-            database = load_database()
+
+            experience_level = st.selectbox("🧑‍💼 Select Experience Level:", ["Fresher Level", "Senior Level"])
+
+            try:
+                if experience_level == "Senior Level":
+                    database = pd.read_excel(DB_PATH, sheet_name="Senior_Level", engine='openpyxl')
+                else:
+                    database = pd.read_excel(DB_PATH, sheet_name="Fresher_Level", engine='openpyxl')
+            except Exception as e:
+                st.error(f"❌ Error loading data: {e}")
+                database = pd.DataFrame(columns=["job_title", "job_description_text"])
+
             matched_roles = []
             if st.session_state.resume_summary:
                 resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
                 matched_roles = match_resume_to_roles(resume_text, database)
+
             selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist())
+
             if st.button("▶️ Start Interview"):
                 if selected_role:
                     st.session_state.role = selected_role
@@ -155,6 +151,7 @@ def main():
                     if st.session_state.transcripts:
                         st.session_state.current_question = st.session_state.transcripts.pop(0)
                         st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
+
             if st.session_state.get("current_question"):
                 st.write(f"**👔 Interviewer:** {st.session_state.current_question}")
                 answer = st.text_area("✍️ Your Answer:")
