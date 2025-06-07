@@ -90,6 +90,52 @@ def match_resume_to_roles(resume_text, job_df, top_n=3):
     matched_roles = [roles[i] for i in top_indices]
     return matched_roles
 
+# ========== Experience-Level Based Interview Questions ==========
+experience_questions = {
+    "Internship": [
+        "Explain the difference between supervised and unsupervised learning.",
+        "What is overfitting and how can you prevent it?",
+        "Describe a project where you used machine learning.",
+        "What Python libraries are you familiar with for ML?",
+        "How would you evaluate the performance of a model?"
+    ],
+    "Entry level": [
+        "How does a decision tree algorithm work?",
+        "What are precision, recall, and F1-score?",
+        "Describe how gradient descent works.",
+        "How would you clean a large dataset with missing values?",
+        "What are common activation functions in neural networks?"
+    ],
+    "Associate": [
+        "Explain the concept of regularization in machine learning.",
+        "How do you handle class imbalance in a dataset?",
+        "What’s the difference between bagging and boosting?",
+        "Describe your experience with deploying ML models.",
+        "What’s your approach to feature selection?"
+    ],
+    "Mid-Senior level": [
+        "Describe the architecture of a recent ML project you led.",
+        "How do you scale machine learning solutions in production?",
+        "What is your approach to model interpretability?",
+        "Discuss the tradeoffs between model complexity and performance.",
+        "How do you stay updated with the latest ML research?"
+    ],
+    "Director": [
+        "How do you align data science initiatives with business goals?",
+        "Describe a time you managed a cross-functional data team.",
+        "How do you prioritize ML projects?",
+        "What’s your strategy for talent development in your team?",
+        "How do you measure the impact of ML in your organization?"
+    ],
+    "Executive": [
+        "How do you define the data vision for an organization?",
+        "What are your strategies for data governance and compliance?",
+        "How do you collaborate with other executives on data strategy?",
+        "Describe a time you led a digital transformation initiative.",
+        "How do you balance innovation with operational efficiency?"
+    ]
+}
+
 # ========== Streamlit Main UI ==========
 def main():
     st.set_page_config(page_title="🤖 AI Interview Assistant", layout="wide")
@@ -125,15 +171,19 @@ def main():
         with col2:
             st.subheader("🎤 Interview Mode")
 
-            experience_level = st.selectbox("🧑‍💼 Select Experience Level:", ["Select", "Fresher Level", "Senior Level"])
+            experience_level = st.selectbox("🧑‍💼 Select Experience Level:", list(["Select"] + list(experience_questions.keys())))
 
             if experience_level != "Select":
                 try:
                     xls = pd.ExcelFile(DB_PATH)
                     available_sheets = xls.sheet_names
                     sheet_map = {
-                        "Fresher Level": "Fresher_Level",
-                        "Senior Level": "Senior_Level"
+                        "Internship": "Fresher_Level",
+                        "Entry level": "Fresher_Level",
+                        "Associate": "Fresher_Level",
+                        "Mid-Senior level": "Senior_Level",
+                        "Director": "Senior_Level",
+                        "Executive": "Senior_Level"
                     }
                     sheet_name = sheet_map.get(experience_level, available_sheets[0])
                     if sheet_name not in available_sheets:
@@ -154,7 +204,7 @@ def main():
                     if selected_role:
                         st.session_state.role = selected_role
                         st.session_state.conversation = []
-                        st.session_state.transcripts = database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
+                        st.session_state.transcripts = experience_questions.get(experience_level, []) + database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
                         if st.session_state.transcripts:
                             st.session_state.current_question = st.session_state.transcripts.pop(0)
                             st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
