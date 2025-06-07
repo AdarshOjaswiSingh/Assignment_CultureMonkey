@@ -199,16 +199,20 @@ def main():
                     resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
                     matched_roles = match_resume_to_roles(resume_text, database)
 
-                selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist())
+                all_roles = matched_roles or database["job_title"].dropna().unique().tolist()
+                if not all_roles:
+                    st.warning("⚠️ No roles found. Try uploading your resume or check the dataset.")
+                else:
+                    selected_role = st.selectbox("🔍 Select matched role:", all_roles)
 
-                if st.button("▶️ Start Interview"):
-                    if selected_role:
-                        st.session_state.role = selected_role
-                        st.session_state.conversation = []
-                        st.session_state.transcripts = experience_questions.get(experience_level, []) + database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
-                        if st.session_state.transcripts:
-                            st.session_state.current_question = st.session_state.transcripts.pop(0)
-                            st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
+                    if st.button("▶️ Start Interview"):
+                        if selected_role:
+                            st.session_state.role = selected_role
+                            st.session_state.conversation = []
+                            st.session_state.transcripts = experience_questions.get(experience_level, []) + database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
+                            if st.session_state.transcripts:
+                                st.session_state.current_question = st.session_state.transcripts.pop(0)
+                                st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
 
                 if st.session_state.get("current_question"):
                     st.write(f"**👔 Interviewer:** {st.session_state.current_question}")
