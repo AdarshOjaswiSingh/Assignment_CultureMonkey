@@ -4,7 +4,7 @@ import os
 from PyPDF2 import PdfReader
 from docx import Document
 
-DB_PATH = "End-to-End-AI-driven-pipeline-with-real-time-interview-insights-main/compliance-checker/src/Adarsh_Generated_Candidate_Data.xlsx"
+DB_PATH = "dataset_cultureMonkey.csv"
 
 def extract_pdf_text(file):
     try:
