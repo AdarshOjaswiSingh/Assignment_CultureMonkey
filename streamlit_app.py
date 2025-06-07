@@ -129,10 +129,8 @@ def main():
 
             if experience_level != "Select":
                 try:
-                    if experience_level == "Senior Level":
-                        database = pd.read_excel(DB_PATH, sheet_name="Senior_Level", engine='openpyxl')
-                    else:
-                        database = pd.read_excel(DB_PATH, sheet_name="Fresher_Level", engine='openpyxl')
+                    sheet_name = "Fresher_Level" if experience_level == "Fresher Level" else "Senior_Level"
+                    database = pd.read_excel(DB_PATH, sheet_name=sheet_name, engine='openpyxl')
                 except Exception as e:
                     st.error(f"❌ Error loading data: {e}")
                     database = pd.DataFrame(columns=["job_title", "job_description_text"])
