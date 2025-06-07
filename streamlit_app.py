@@ -151,7 +151,7 @@ def main():
         with col1:
             upload_data()
         with col2:
-            st.subheader("Interview Mode")
+            st.subheader("Best Match")
             database = load_database()
             matched_roles = []
             if st.session_state.resume_summary:
@@ -160,9 +160,9 @@ def main():
             selected_role = st.selectbox("Select matched role for interview:", matched_roles or database["job_title"].dropna().unique().tolist())
             if st.button("Start Interview"):
                 if selected_role:
-                    st.session_state.role = selected_role
+                    st.session_state.role = selected_job_title
                     st.session_state.conversation = []
-                    st.session_state.transcripts = database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
+                    st.session_state.transcripts = database[database["job_title"] == selected_job_title]["job_description_text"].dropna().tolist()
                     if st.session_state.transcripts:
                         st.session_state.current_question = st.session_state.transcripts.pop(0)
                         st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
