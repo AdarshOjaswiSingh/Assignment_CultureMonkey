@@ -33,7 +33,8 @@ def extract_resume_details(text):
         "Skills": ["Skills", "Technical Skills", "Core Competencies"],
         "Achievements": ["Achievements", "Accomplishments", "Key Highlights"],
         "Experience": ["Experience", "Work Experience", "Professional Experience"],
-        "Projects": ["Projects", "Key Projects", "Academic Projects"]
+        "Projects": ["Projects", "Key Projects", "Academic Projects"],
+        "Education": ["Education", "Academic Background", "Qualifications"]
     }
     extracted_info = {key: [] for key in summary_sections}
     current_section = None
@@ -48,21 +49,6 @@ def extract_resume_details(text):
                 extracted_info[current_section].append(line)
     formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
     return formatted_output if formatted_output else "No structured data found. Please label resume sections clearly."
-
-# ========== Resume to Role Matching ==========
-def match_resume_to_roles(resume_text, job_df, top_n=3):
-    if job_df.empty or "job_description_text" not in job_df.columns or "job_title" not in job_df.columns:
-        return []
-    descriptions = job_df["job_description_text"].fillna("").tolist()
-    roles = job_df["job_title"].fillna("Unknown Role").tolist()
-    corpus = descriptions + [resume_text]
-    vectorizer = TfidfVectorizer(stop_words="english")
-    tfidf_matrix = vectorizer.fit_transform(corpus)
-    similarity_scores = cosine_similarity(tfidf_matrix[-1], tfidf_matrix[:-1]).flatten()
-    top_indices = similarity_scores.argsort()[-top_n:][::-1]
-    matched_roles = [roles[i] for i in top_indices]
-    return matched_roles
-
 
 # ========== Resume Upload Logic ==========
 def upload_data():
@@ -181,93 +167,63 @@ def main():
 
     elif options == "📄 Resume & Interview":
         col1, col2 = st.columns(2)
-
         with col1:
             upload_data()
-
         with col2:
             st.subheader("🎤 Interview Mode")
 
-            # Experience level selector
-            experience_level = st.selectbox(
-                "🧑‍💼 Select Experience Level:",
-                options=["Select"] + list(experience_questions.keys())
-            )
+            experience_level = st.selectbox("🧑‍💼 Select Experience Level:", list(["Select"] + list(experience_questions.keys())))
 
-            # Button to start interview
-            if st.button("▶️ Start Interview"):
+            if experience_level != "Select":
+                try:
+                    xls = pd.ExcelFile(DB_PATH)
+                    available_sheets = xls.sheet_names
+                    sheet_map = {
+                        "Internship": "Fresher_Level",
+                        "Entry level": "Fresher_Level",
+                        "Associate": "Fresher_Level",
+                        "Mid-Senior level": "Senior_Level",
+                        "Director": "Senior_Level",
+                        "Executive": "Senior_Level"
+                    }
+                    sheet_name = sheet_map.get(experience_level, available_sheets[0])
+                    if sheet_name not in available_sheets:
+                        raise ValueError(f"Worksheet named '{sheet_name}' not found")
+                    database = pd.read_excel(DB_PATH, sheet_name=sheet_name, engine='openpyxl')
+                except Exception as e:
+                    st.error(f"❌ Error loading data: {e}")
+                    database = pd.DataFrame(columns=["job_title", "job_description_text"])
 
-                if experience_level == "Select":
-                    st.warning("Please select an experience level before starting the interview.")
-                else:
-                    # Initialize interview session variables
-                    st.session_state.questions = experience_questions[experience_level]
-                    st.session_state.current_index = 0
-                    st.session_state.answers = []
+                matched_roles = []
+                if st.session_state.resume_summary:
+                    resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
+                    matched_roles = match_resume_to_roles(resume_text, database)
 
-            # If interview has started, show questions one by one
-            if "questions" in st.session_state and st.session_state.questions:
-                current_idx = st.session_state.current_index
-                questions = st.session_state.questions
+                selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist())
 
-                st.write(f"**Question {current_idx + 1} of {len(questions)}:**")
-                st.write(questions[current_idx])
+                if st.button("▶️ Start Interview"):
+                    if selected_role:
+                        st.session_state.role = selected_role
+                        st.session_state.conversation = []
+                        st.session_state.transcripts = experience_questions.get(experience_level, []) + database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
+                        if st.session_state.transcripts:
+                            st.session_state.current_question = st.session_state.transcripts.pop(0)
+                            st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
 
-                # Answer input area
-                answer = st.text_area("✍️ Your Answer:")
-
-                if st.button("📤 Submit Answer"):
-
-                    if not answer.strip():
-                        st.warning("Please enter your answer before submitting.")
-                    else:
-                        st.session_state.answers.append((questions[current_idx], answer.strip()))
-
-                        # Next question or finish interview
-                        if current_idx + 1 < len(questions):
-                            st.session_state.current_index += 1
-                            st.experimental_rerun()
+                if st.session_state.get("current_question"):
+                    st.write(f"**👔 Interviewer:** {st.session_state.current_question}")
+                    answer = st.text_area("✍️ Your Answer:")
+                    if st.button("📤 Submit Response"):
+                        if answer.strip():
+                            st.session_state.conversation.append(("Candidate", answer))
+                            if st.session_state.transcripts:
+                                st.session_state.current_question = st.session_state.transcripts.pop(0)
+                                st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
+                            else:
+                                st.success("🎉 Interview complete!")
+                                st.session_state.current_question = None
                         else:
-                            st.success("🎉 You have completed the interview!")
-                            st.write("### Your Interview Responses:")
-                            for i, (q, a) in enumerate(st.session_state.answers, 1):
-                                st.markdown(f"**Q{i}: {q}**")
-                                st.markdown(f"A{i}: {a}")
-
-                            # Clean up to allow restart if needed
-                            del st.session_state.questions
-                            del st.session_state.current_index
-                            del st.session_state.answers
-
-            # Existing role matching logic below (optional, you can comment if you want)
-            # try:
-            #     xls = pd.ExcelFile(DB_PATH)
-            #     available_sheets = xls.sheet_names
-            #     sheet_map = {
-            #         "Internship": "Fresher_Level",
-            #         "Entry level": "Fresher_Level",
-            #         "Associate": "Fresher_Level",
-            #         "Mid-Senior level": "Senior_Level",
-            #         "Director": "Senior_Level",
-            #         "Executive": "Senior_Level"
-            #     }
-            #     sheet_name = sheet_map.get(experience_level, available_sheets[0])
-            #     if sheet_name not in available_sheets:
-            #         raise ValueError(f"Worksheet named '{sheet_name}' not found")
-            #     database = pd.read_excel(DB_PATH, sheet_name=sheet_name, engine='openpyxl')
-            # except Exception as e:
-            #     st.error(f"❌ Error loading data: {e}")
-            #     database = pd.DataFrame(columns=["job_title", "job_description_text"])
-
-            # matched_roles = []
-            # if st.session_state.resume_summary:
-            #     resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
-            #     matched_roles = match_resume_to_roles(resume_text, database)
-
-            # selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist())
-
-            # if selected_role:
-            #     st.session_state.role = selected_role
+                            st.warning("⚠️ Answer cannot be empty.")
 
     elif options == "⬇️ Download":
         st.header("📥 Download Results")
