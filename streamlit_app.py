@@ -6,7 +6,7 @@ from docx import Document
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-DB_PATH = "dataset_cultureMonkey.csv"
+DB_PATH = "dataset_cultureMonkey.xlsx"
 
 # ========== File Text Extractors ==========
 def extract_pdf_text(file):
@@ -79,14 +79,14 @@ def upload_data():
 def load_database():
     try:
         if os.path.exists(DB_PATH):
-            df = pd.read_csv(DB_PATH)
+            df = pd.read_excel(DB_PATH, engine='openpyxl')
             df.columns = df.columns.str.strip()
             if not all(col in df.columns for col in ["Role", "Transcript"]):
-                st.error("\u26A0\uFE0F CSV format error: Expected 'Role' and 'Transcript' columns.")
+                st.error("\u26A0\uFE0F Excel format error: Expected 'Role' and 'Transcript' columns.")
                 return pd.DataFrame(columns=["Role", "Transcript"])
             return df
         else:
-            st.warning("\u26A0\uFE0F Database not found! Using an empty one.")
+            st.warning("\u26A0\uFE0F Database not found! Initializing empty one.")
             return pd.DataFrame(columns=["Role", "Transcript"])
     except Exception as e:
         st.error(f"Error loading database: {e}")
