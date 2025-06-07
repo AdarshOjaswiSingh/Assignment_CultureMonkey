@@ -111,6 +111,19 @@ def match_resume_to_roles(resume_text, job_df, top_n=3):
 def main():
     st.set_page_config(page_title="AI Interview Assistant", layout="wide")
 
+    # CSS to remove any background images and set plain white background
+    st.markdown(
+        """
+        <style>
+        body, .css-1d391kg, .stApp {
+            background-image: none !important;
+            background-color: #ffffff !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     st.title("AI Interview Assistant")
     st.markdown("This is a lightweight demo for automating resume analysis and mock interview simulation. Created by **Adarsh Ojaswi Singh**.")
     st.sidebar.title("Navigation")
