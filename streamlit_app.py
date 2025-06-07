@@ -114,7 +114,7 @@ def main():
         st.session_state.transcripts = []
 
     st.title("🤖 AI Interview Assistant - Assignment Demo")
-    st.markdown("Welcome to the AI-powered interview system built for academic purposes by **Adarsh Ojaswi Singh**.")
+    st.markdown("Welcome to the AI-powered interview system built for Assignment purposes by **Adarsh Ojaswi Singh**.")
 
     st.sidebar.header("📌 Navigation")
     options = st.sidebar.radio("Go to:", ["🏠 Home", "📂 Resume Upload & Interview", "📥 Download Output", "ℹ️ About"])
