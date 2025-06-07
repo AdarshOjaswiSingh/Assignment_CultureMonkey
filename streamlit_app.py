@@ -33,8 +33,7 @@ def extract_resume_details(text):
         "Skills": ["Skills", "Technical Skills", "Core Competencies"],
         "Achievements": ["Achievements", "Accomplishments", "Key Highlights"],
         "Experience": ["Experience", "Work Experience", "Professional Experience"],
-        "Projects": ["Projects", "Key Projects", "Academic Projects"],
-        "Education": ["Education", "Academic Background", "Qualifications"]
+        "Projects": ["Projects", "Key Projects", "Academic Projects"]
     }
     extracted_info = {key: [] for key in summary_sections}
     current_section = None
@@ -77,6 +76,23 @@ def upload_data():
         except Exception as e:
             st.error(f"❌ Error processing file: {e}")
 
+# ========== Load Predefined Interview Questions ==========
+def load_database():
+    try:
+        if os.path.exists(DB_PATH):
+            df = pd.read_excel(DB_PATH, engine='openpyxl')
+            df.columns = df.columns.str.strip()
+            if not all(col in df.columns for col in ["job_title", "job_description_text"]):
+                st.error("❌ Excel format error: Expected 'job_title' and 'job_description_text' columns.")
+                return pd.DataFrame(columns=["job_title", "job_description_text"])
+            return df
+        else:
+            st.warning("⚠️ Database not found! Initializing empty one.")
+            return pd.DataFrame(columns=["job_title", "job_description_text"])
+    except Exception as e:
+        st.error(f"❌ Error loading database: {e}")
+        return pd.DataFrame()
+
 # ========== Resume to Role Matching ==========
 def match_resume_to_roles(resume_text, job_df, top_n=3):
     if job_df.empty or "job_description_text" not in job_df.columns or "job_title" not in job_df.columns:
@@ -90,52 +106,6 @@ def match_resume_to_roles(resume_text, job_df, top_n=3):
     top_indices = similarity_scores.argsort()[-top_n:][::-1]
     matched_roles = [roles[i] for i in top_indices]
     return matched_roles
-
-# ========== Experience-Level Based Interview Questions ==========
-experience_questions = {
-    "Internship": [
-        "Explain the difference between supervised and unsupervised learning.",
-        "What is overfitting and how can you prevent it?",
-        "Describe a project where you used machine learning.",
-        "What Python libraries are you familiar with for ML?",
-        "How would you evaluate the performance of a model?"
-    ],
-    "Entry level": [
-        "How does a decision tree algorithm work?",
-        "What are precision, recall, and F1-score?",
-        "Describe how gradient descent works.",
-        "How would you clean a large dataset with missing values?",
-        "What are common activation functions in neural networks?"
-    ],
-    "Associate": [
-        "Explain the concept of regularization in machine learning.",
-        "How do you handle class imbalance in a dataset?",
-        "What’s the difference between bagging and boosting?",
-        "Describe your experience with deploying ML models.",
-        "What’s your approach to feature selection?"
-    ],
-    "Mid-Senior level": [
-        "Describe the architecture of a recent ML project you led.",
-        "How do you scale machine learning solutions in production?",
-        "What is your approach to model interpretability?",
-        "Discuss the tradeoffs between model complexity and performance.",
-        "How do you stay updated with the latest ML research?"
-    ],
-    "Director": [
-        "How do you align data science initiatives with business goals?",
-        "Describe a time you managed a cross-functional data team.",
-        "How do you prioritize ML projects?",
-        "What’s your strategy for talent development in your team?",
-        "How do you measure the impact of ML in your organization?"
-    ],
-    "Executive": [
-        "How do you define the data vision for an organization?",
-        "What are your strategies for data governance and compliance?",
-        "How do you collaborate with other executives on data strategy?",
-        "Describe a time you led a digital transformation initiative.",
-        "How do you balance innovation with operational efficiency?"
-    ]
-}
 
 # ========== Streamlit Main UI ==========
 def main():
@@ -171,63 +141,34 @@ def main():
             upload_data()
         with col2:
             st.subheader("🎤 Interview Mode")
-
-            experience_level = st.selectbox("🧑‍💼 Select Experience Level:", list(["Select"] + list(experience_questions.keys())))
-
-            if experience_level != "Select":
-                try:
-                    xls = pd.ExcelFile(DB_PATH)
-                    available_sheets = xls.sheet_names
-                    sheet_map = {
-                        "Internship": "Fresher_Level",
-                        "Entry level": "Fresher_Level",
-                        "Associate": "Fresher_Level",
-                        "Mid-Senior level": "Senior_Level",
-                        "Director": "Senior_Level",
-                        "Executive": "Senior_Level"
-                    }
-                    sheet_name = sheet_map.get(experience_level, available_sheets[0])
-                    if sheet_name not in available_sheets:
-                        raise ValueError(f"Worksheet named '{sheet_name}' not found")
-                    database = pd.read_excel(DB_PATH, sheet_name=sheet_name, engine='openpyxl')
-                except Exception as e:
-                    st.error(f"❌ Error loading data: {e}")
-                    database = pd.DataFrame(columns=["job_title", "job_description_text"])
-
-                matched_roles = []
-                if st.session_state.resume_summary:
-                    resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
-                    matched_roles = match_resume_to_roles(resume_text, database)
-
-                all_roles = matched_roles or database["job_title"].dropna().unique().tolist()
-                if not all_roles:
-                    st.warning("⚠️ No roles found. Try uploading your resume or check the dataset.")
-                else:
-                    selected_role = st.selectbox("🔍 Select matched role:", all_roles)
-
-                    if st.button("▶️ Start Interview"):
-                        if selected_role:
-                            st.session_state.role = selected_role
-                            st.session_state.conversation = []
-                            st.session_state.transcripts = experience_questions.get(experience_level, []) + database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
-                            if st.session_state.transcripts:
-                                st.session_state.current_question = st.session_state.transcripts.pop(0)
-                                st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
-
-                if st.session_state.get("current_question"):
-                    st.write(f"**👔 Interviewer:** {st.session_state.current_question}")
-                    answer = st.text_area("✍️ Your Answer:")
-                    if st.button("📤 Submit Response"):
-                        if answer.strip():
-                            st.session_state.conversation.append(("Candidate", answer))
-                            if st.session_state.transcripts:
-                                st.session_state.current_question = st.session_state.transcripts.pop(0)
-                                st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
-                            else:
-                                st.success("🎉 Interview complete!")
-                                st.session_state.current_question = None
+            database = load_database()
+            matched_roles = []
+            if st.session_state.resume_summary:
+                resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
+                matched_roles = match_resume_to_roles(resume_text, database)
+            selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist())
+            if st.button("▶️ Start Interview"):
+                if selected_role:
+                    st.session_state.role = selected_role
+                    st.session_state.conversation = []
+                    st.session_state.transcripts = database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
+                    if st.session_state.transcripts:
+                        st.session_state.current_question = st.session_state.transcripts.pop(0)
+                        st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
+            if st.session_state.get("current_question"):
+                st.write(f"**👔 Interviewer:** {st.session_state.current_question}")
+                answer = st.text_area("✍️ Your Answer:")
+                if st.button("📤 Submit Response"):
+                    if answer.strip():
+                        st.session_state.conversation.append(("Candidate", answer))
+                        if st.session_state.transcripts:
+                            st.session_state.current_question = st.session_state.transcripts.pop(0)
+                            st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
                         else:
-                            st.warning("⚠️ Answer cannot be empty.")
+                            st.success("🎉 Interview complete!")
+                            st.session_state.current_question = None
+                    else:
+                        st.warning("⚠️ Answer cannot be empty.")
 
     elif options == "⬇️ Download":
         st.header("📥 Download Results")
