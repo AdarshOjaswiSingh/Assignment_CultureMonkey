@@ -49,6 +49,21 @@ def extract_resume_details(text):
     formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
     return formatted_output if formatted_output else "No structured data found. Please label resume sections clearly."
 
+# ========== Resume to Role Matching ==========
+def match_resume_to_roles(resume_text, job_df, top_n=3):
+    if job_df.empty or "job_description_text" not in job_df.columns or "job_title" not in job_df.columns:
+        return []
+    descriptions = job_df["job_description_text"].fillna("").tolist()
+    roles = job_df["job_title"].fillna("Unknown Role").tolist()
+    corpus = descriptions + [resume_text]
+    vectorizer = TfidfVectorizer(stop_words="english")
+    tfidf_matrix = vectorizer.fit_transform(corpus)
+    similarity_scores = cosine_similarity(tfidf_matrix[-1], tfidf_matrix[:-1]).flatten()
+    top_indices = similarity_scores.argsort()[-top_n:][::-1]
+    matched_roles = [roles[i] for i in top_indices]
+    return matched_roles
+
+
 # ========== Resume Upload Logic ==========
 def upload_data():
     st.subheader("📤 Upload Resume")
