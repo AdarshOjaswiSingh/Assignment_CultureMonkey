@@ -1,11 +1,9 @@
 import streamlit as st
 import pandas as pd
-import os
 from PyPDF2 import PdfReader
 from docx import Document
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import sys
 
 DB_PATH = "dataset_cultureMonkey.xlsx"
 
@@ -145,6 +143,7 @@ def main():
     st.sidebar.title("🧭 Navigation")
     options = st.sidebar.radio("Choose a section:", ["🏠 Home", "📄 Resume & Interview", "⬇️ Download", "ℹ️ About"])
 
+    # Initialize session state variables
     if "resume_summary" not in st.session_state:
         st.session_state.resume_summary = None
     if "conversation" not in st.session_state:
@@ -171,28 +170,20 @@ def main():
         with col2:
             st.subheader("🎤 Interview Mode")
 
-            experience_level = st.selectbox("🧑‍💼 Select Experience Level:", list(["Select"] + list(experience_questions.keys())))
+            experience_level = st.selectbox("🧑‍💼 Select Experience Level:", ["Select"] + list(experience_questions.keys()))
 
             if experience_level != "Select":
                 try:
                     xls = pd.ExcelFile(DB_PATH)
                     available_sheets = xls.sheet_names
-                    sheet_map = {
-                        "Internship": "Fresher_Level",
-                        "Entry level": "Fresher_Level",
-                        "Associate": "Fresher_Level",
-                        "Mid-Senior level": "Senior_Level",
-                        "Director": "Senior_Level",
-                        "Executive": "Senior_Level"
-                    }
-                    sheet_name = sheet_map.get(experience_level, available_sheets[0])
-                    if sheet_name not in available_sheets:
-                        raise ValueError(f"Worksheet named '{sheet_name}' not found")
+                    # Use a single sheet for all roles or adjust as needed
+                    sheet_name = "Roles" if "Roles" in available_sheets else available_sheets[0]
                     database = pd.read_excel(DB_PATH, sheet_name=sheet_name, engine='openpyxl')
                 except Exception as e:
                     st.error(f"❌ Error loading data: {e}")
                     database = pd.DataFrame(columns=["job_title", "job_description_text"])
 
+                # Match roles from dataset based on resume summary text
                 matched_roles = []
                 if st.session_state.resume_summary:
                     resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
@@ -204,7 +195,12 @@ def main():
                     if selected_role:
                         st.session_state.role = selected_role
                         st.session_state.conversation = []
-                        st.session_state.transcripts = experience_questions.get(experience_level, []) + database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
+                        # Start with experience level questions
+                        questions = experience_questions.get(experience_level, []).copy()
+                        # Append role-specific questions from Excel dataset if available
+                        role_questions = database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
+                        questions.extend(role_questions)
+                        st.session_state.transcripts = questions
                         if st.session_state.transcripts:
                             st.session_state.current_question = st.session_state.transcripts.pop(0)
                             st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
