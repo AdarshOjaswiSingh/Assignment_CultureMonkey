@@ -302,7 +302,7 @@ def main():
                 # Combine both
                 full_output = transcript
             if resume_summary:
-            full_output += "\n\nResume Summary:\n" + resume_summary
+                full_output += "\n\nResume Summary:\n" + resume_summary
 
                 # Show buttons
             if full_output.strip():
