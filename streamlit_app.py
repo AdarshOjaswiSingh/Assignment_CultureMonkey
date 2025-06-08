@@ -235,40 +235,40 @@ def main():
 
 
     elif options == "ℹ️ About":
-    st.header("📚 About This App")
-
-    st.markdown("""
-    This app is designed to assist with **resume analysis** and **job market insights**  
-    as part of a recruitment system simulation by **CultureMonkey**.
-
-    Built using **Python** and **Streamlit**, the system enables users to upload resumes,  
-    analyze skills, and get matched to relevant job roles. It's a smart, AI-assisted tool  
-    aimed at improving candidate-job alignment. 💼
-    """)
-
-    st.markdown("### 🎯 Objective")
-    st.markdown("""
-    Design and implement a job market analysis system using the provided dataset,  
-    focusing on extracting useful information from resumes and job listings.
-    """)
-
-    st.markdown("### 🛠️ Key Features")
-    st.markdown("""
-    - 📄 **Resume Parsing & Analysis**  
-      Extracts skills and experience from resumes.
+        st.header("📚 About This App")
     
-    - 🔍 **Job Role Matching**  
-      Suggests job roles based on the resume content using similarity scoring.
+        st.markdown("""
+        This app is designed to assist with **resume analysis** and **job market insights**  
+        as part of a recruitment system simulation by **CultureMonkey**.
     
-    - 📊 **Skill Demand Visualization**  
-      Shows trends and demand for various skills in the job market.
+        Built using **Python** and **Streamlit**, the system enables users to upload resumes,  
+        analyze skills, and get matched to relevant job roles. It's a smart, AI-assisted tool  
+        aimed at improving candidate-job alignment. 💼
+        """)
     
-    - 🚀 **Gap Analysis**  
-      Identifies missing but in-demand skills to guide candidates.
-    """)
-
-    st.markdown("---")
-    st.markdown("Built by **Adarsh Ojaswi Singh** as part of a recruitment system simulation. ✨")
+        st.markdown("### 🎯 Objective")
+        st.markdown("""
+        Design and implement a job market analysis system using the provided dataset,  
+        focusing on extracting useful information from resumes and job listings.
+        """)
+    
+        st.markdown("### 🛠️ Key Features")
+        st.markdown("""
+        - 📄 **Resume Parsing & Analysis**  
+          Extracts skills and experience from resumes.
+        
+        - 🔍 **Job Role Matching**  
+          Suggests job roles based on the resume content using similarity scoring.
+        
+        - 📊 **Skill Demand Visualization**  
+          Shows trends and demand for various skills in the job market.
+        
+        - 🚀 **Gap Analysis**  
+          Identifies missing but in-demand skills to guide candidates.
+        """)
+    
+        st.markdown("---")
+        st.markdown("Built by **Adarsh Ojaswi Singh** as part of a recruitment system simulation. ✨")
 
 
     elif options == "📄 Resume & Interview":
