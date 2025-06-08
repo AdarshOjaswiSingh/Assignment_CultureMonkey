@@ -19,7 +19,7 @@ st.markdown(
     """
     <style>
     .stApp {
-        background-image: url("images/wordcloud_background.jpg");
+        background-image: url("=======.jpg");
         background-size: cover;
         background-repeat: no-repeat;
         background-attachment: fixed;
