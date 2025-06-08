@@ -12,6 +12,24 @@ from collections import Counter
 
 DB_PATH = "dataset_cultureMonkey.xlsx"
 
+import streamlit as st
+
+# Inject custom CSS for watermark background
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-image: url("images/wordcloud_background.jpg");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        opacity: 0.06;
+        z-index: -1;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # ========== File Text Extractors ==========
 def extract_pdf_text(file):
     try:
