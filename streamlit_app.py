@@ -118,8 +118,8 @@ def generate_visualizations(job_df):
 
     # Skills by seniority
     if "experience_level" in job_df.columns and "key_skills" in job_df.columns:
-        entry_skills = job_df[job_df['experience_level'].str.lower().str.contains("entry", na=False)]['key_skills'].dropna().str.split(",").explode().str.strip()
-        mid_senior_skills = job_df[job_df['experience_level'].str.lower().str.contains("mid", na=False)]['key_skills'].dropna().str.split(",").explode().str.strip()
+        entry_skills = job_df[job_df['experience_level'].str.lower().str.contains("entry")]['key_skills'].dropna().str.split(",").explode().str.strip()
+        mid_senior_skills = job_df[job_df['experience_level'].str.lower().str.contains("mid")]['key_skills'].dropna().str.split(",").explode().str.strip()
         skill_counts = pd.DataFrame({
             'Entry Level': entry_skills.value_counts(),
             'Mid-Senior Level': mid_senior_skills.value_counts()
@@ -163,7 +163,6 @@ def generate_visualizations(job_df):
         ax.axis('equal')
         st.pyplot(fig)
 
-
 # ========== Streamlit Main UI ==========
 def main():
     st.set_page_config(page_title="🤖 AI Interview Assistant", layout="wide")
@@ -196,7 +195,6 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             upload_data()
-
         with col2:
             st.subheader("🎤 Matching Job Descriptions")
             database = load_database()
@@ -204,10 +202,9 @@ def main():
             if st.session_state.resume_summary:
                 resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
                 matched_roles = match_resume_to_roles(resume_text, database)
-
-            selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist(), key="select_role")
-
-            if st.button("▶️ Start Interview", key="start_interview"):
+            selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist(), key="select_matched_role")
+            
+            if st.button("▶️ Start Interview", key="start_interview_btn"):
                 if selected_role:
                     st.session_state.role = selected_role
                     st.session_state.conversation = []
@@ -215,14 +212,11 @@ def main():
                     if st.session_state.transcripts:
                         st.session_state.current_question = st.session_state.transcripts.pop(0)
                         st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
-
-            if st.button("📊 Show Visualizations", key="show_visualizations"):
-                generate_visualizations(database)
-
+            
             if st.session_state.get("current_question"):
                 st.write(f"**👔 Interviewer:** {st.session_state.current_question}")
                 answer = st.text_area("✍️ Your Answer:", key="answer_text_area")
-                if st.button("📤 Submit Response", key="submit_response"):
+                if st.button("📤 Submit Response", key="submit_response_btn"):
                     if answer.strip():
                         st.session_state.conversation.append(("Candidate", answer))
                         if st.session_state.transcripts:
@@ -234,6 +228,11 @@ def main():
                     else:
                         st.warning("⚠️ Answer cannot be empty.")
 
+            # Visualization button
+            if st.button("📊 Show Visualizations", key="show_visualizations_btn"):
+                if not database.empty:
+                    generate_visualizations(database)
+
     elif options == "⬇️ Download":
         st.header("📥 Download Results")
         if st.session_state.conversation:
@@ -242,9 +241,9 @@ def main():
             if st.session_state.resume_summary:
                 resume_summary = "\n\n".join([f"{sec}:\n{cont}" for sec, cont in st.session_state.resume_summary.items()]) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
             full_output = transcript + ("\n\nResume Summary:\n" + resume_summary if resume_summary else "")
-            st.download_button("💾 Download Full Report", data=full_output, file_name="interview_summary.txt", mime="text/plain")
+            st.download_button("💾 Download Full Report", data=full_output, file_name="interview_summary.txt", mime="text/plain", key="download_full_report")
             if resume_summary:
-                st.download_button("💾 Download Resume Summary", data=resume_summary, file_name="resume_summary.txt", mime="text/plain")
+                st.download_button("💾 Download Resume Summary", data=resume_summary, file_name="resume_summary.txt", mime="text/plain", key="download_resume_summary")
         else:
             st.info("ℹ️ Nothing to download yet.")
 
