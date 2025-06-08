@@ -177,7 +177,40 @@ def main():
                     else:
                         st.warning("Please provide an answer before submitting.")
 
-    
+    elif options == "Download Conversation":
+        st.header("Download Transcript and Book Summary")
+        if "conversation" in st.session_state and st.session_state.conversation:
+            conversation_text = "\n".join([f"{speaker}: {text}" for speaker, text in st.session_state.conversation])
+            
+            # Ensure resume_summary is a string
+            resume_summary_text = ""
+            if st.session_state.resume_summary:
+                if isinstance(st.session_state.resume_summary, dict):
+                    # Convert the dictionary to a string format
+                    for section, content in st.session_state.resume_summary.items():
+                        resume_summary_text += f"{section}:\n{content}\n\n"
+                else:
+                    resume_summary_text = str(st.session_state.resume_summary)
+                
+            # Combine the resume summary and interview transcript
+            download_text = conversation_text
+            if resume_summary_text:
+                download_text += "\n\nResume Summary:\n" + resume_summary_text
+                
+            # Button for downloading the interview transcript with resume summary
+            st.download_button(label="Download Transcript with Book Summary", 
+                               data=download_text, 
+                               file_name="interview_transcript_with_resume_summary.txt", 
+                               mime="text/plain")
+            
+            # Separate download button for the resume summary
+            if resume_summary_text:
+                st.download_button(label="Download Summary Only", 
+                                   data=resume_summary_text, 
+                                   file_name="resume_summary.txt", 
+                                   mime="text/plain")
+        else:
+            st.warning("No conversation available to download.")
 
 if __name__ == "__main__":
     main()
