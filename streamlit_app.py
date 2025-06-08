@@ -285,8 +285,7 @@ def main():
         # Initialize flags
         has_conversation = "conversation" in st.session_state and st.session_state.conversation
         has_summary = "resume_summary" in st.session_state and st.session_state.resume_summary
-
-            if has_conversation or has_summary:
+        if has_conversation or has_summary:
                 # Build transcript
                 transcript = ""
                 if has_conversation:
