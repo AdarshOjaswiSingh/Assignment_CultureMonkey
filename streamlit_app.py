@@ -9,27 +9,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from wordcloud import WordCloud
 from collections import Counter
-import streamlit as st
 
 DB_PATH = "dataset_cultureMonkey.xlsx"
 
-
-# Inject custom CSS for watermark background
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-image: url("=======.jpg");
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-        opacity: 0.06;
-        z-index: -1;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 # ========== File Text Extractors ==========
 def extract_pdf_text(file):
     try:
