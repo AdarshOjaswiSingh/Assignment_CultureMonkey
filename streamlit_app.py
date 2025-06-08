@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from wordcloud import WordCloud
 from collections import Counter
+import streamlit as st
 
 DB_PATH = "dataset_cultureMonkey.xlsx"
 
-import streamlit as st
 
 # Inject custom CSS for watermark background
 st.markdown(
