@@ -289,7 +289,7 @@ def main():
                 # Build transcript
                 transcript = ""
                 if has_conversation:
-                transcript = "\n".join([f"{role}: {text}" for role, text in st.session_state.conversation])
+                    transcript = "\n".join([f"{role}: {text}" for role, text in st.session_state.conversation])
         
                 # Build resume summary
                 resume_summary = ""
