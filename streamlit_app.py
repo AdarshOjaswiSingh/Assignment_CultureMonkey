@@ -68,28 +68,35 @@ def extract_resume_details(text):
 
 # ========== Resume Upload Logic ==========
 def upload_data():
-    st.subheader("📤 Upload Resume")
+    st.subheader("📄 Upload Resume")
     uploaded_file = st.file_uploader("📄 Upload a file (PDF, DOCX, or Excel)", type=["pdf", "docx", "xlsx"])
     if uploaded_file:
         try:
             if uploaded_file.name.endswith(".pdf"):
                 text = extract_pdf_text(uploaded_file)
                 summary = extract_resume_details(text)
+                st.session_state.resume_summary = summary
+                st.success("✅ Resume processed successfully!")
+                st.write(summary)
+
             elif uploaded_file.name.endswith(".docx"):
                 text = extract_word_text(uploaded_file)
                 summary = extract_resume_details(text)
+                st.session_state.resume_summary = summary
+                st.success("✅ Resume processed successfully!")
+                st.write(summary)
+
             elif uploaded_file.name.endswith(".xlsx"):
                 df = pd.read_excel(uploaded_file)
+                st.session_state.uploaded_df = df
+                st.success("✅ Excel data uploaded!")
                 st.write("📊 Data Preview:")
                 st.dataframe(df.head())
-                st.write(f"📝 Rows: {len(df)} | Columns: {', '.join(df.columns)}")
-                return
+                st.write(f"📜 Rows: {len(df)} | Columns: {', '.join(df.columns)}")
+
             else:
                 st.error("❌ Unsupported file format!")
-                return
-            st.session_state.resume_summary = summary
-            st.success("✅ Resume processed successfully!")
-            st.write(summary)
+
         except Exception as e:
             st.error(f"❌ Error processing file: {e}")
 
@@ -203,7 +210,7 @@ def main():
     st.set_page_config(page_title="🤖 AI Interview Assistant", layout="wide")
     st.title("🤖 AI Interview Assistant")
     st.markdown("Upload your resume, match to roles, and practice your interview! 🚀")
-    st.sidebar.title("🧭 Navigation")
+    st.sidebar.title("🛍️ Navigation")
     options = st.sidebar.radio("Choose a section:", ["🏠 Home", "📄 Resume & Interview", "⬇️ Download", "ℹ️ About"])
 
     if "resume_summary" not in st.session_state:
@@ -219,7 +226,7 @@ def main():
 
     if options == "🏠 Home":
         st.header("👋 Welcome")
-        st.write("This app helps with resume analysis and interview prep. Upload your resume and begin! 🎯")
+        st.write("This app helps with resume analysis and interview prep. Upload your resume and begin! 🌟")
 
     elif options == "ℹ️ About":
         st.header("📚 About This App")
@@ -231,18 +238,14 @@ def main():
             upload_data()
         with col2:
             st.subheader("🎤 Matching Job Descriptions")
-            database = load_database()
+            database = st.session_state.get("uploaded_df", load_database())
             matched_roles = []
             if st.session_state.resume_summary:
-                resume_text = ""
-                if isinstance(st.session_state.resume_summary, dict):
-                    if isinstance(st.session_state.resume_summary, dict):
-                        resume_text = "\n".join(st.session_state.resume_summary.values())
-                    else:
-                        resume_text = str(st.session_state.resume_summary)
-
-                else:
-                    resume_text = str(st.session_state.resume_summary)
+                resume_text = "\n".join(
+                    val if isinstance(val, str) else str(val)
+                    for key, val in st.session_state.resume_summary.items()
+                    if key != "Skills_JSON"
+                )
                 matched_roles = match_resume_to_roles(resume_text, database)
             selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist())
             if st.button("▶️ Start Interview"):
@@ -254,9 +257,9 @@ def main():
                         st.session_state.current_question = st.session_state.transcripts.pop(0)
                         st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
             if st.session_state.get("current_question"):
-                st.write(f"**👔 Interviewer:** {st.session_state.current_question}")
+                st.write(f"**💼 Interviewer:** {st.session_state.current_question}")
                 answer = st.text_area("✍️ Your Answer:")
-                if st.button("📤 Submit Response"):
+                if st.button("📄 Submit Response"):
                     if answer.strip():
                         st.session_state.conversation.append(("Candidate", answer))
                         if st.session_state.transcripts:
@@ -273,7 +276,7 @@ def main():
                 generate_visualizations(database)
 
     elif options == "⬇️ Download":
-        st.header("📥 Download Results")
+        st.header("📅 Download Results")
         if st.session_state.conversation:
             transcript = "\n".join([f"{role}: {text}" for role, text in st.session_state.conversation])
             resume_summary = ""
@@ -283,9 +286,9 @@ def main():
                 else:
                     resume_summary = str(st.session_state.resume_summary)
             full_output = transcript + ("\n\nResume Summary:\n" + resume_summary if resume_summary else "")
-            st.download_button("💾 Download Full Report", data=full_output, file_name="interview_summary.txt", mime="text/plain")
+            st.download_button("📥 Download Full Report", data=full_output, file_name="interview_summary.txt", mime="text/plain")
             if resume_summary:
-                st.download_button("💾 Download Resume Summary", data=resume_summary, file_name="resume_summary.txt", mime="text/plain")
+                st.download_button("📥 Download Resume Summary", data=resume_summary, file_name="resume_summary.txt", mime="text/plain")
         else:
             st.info("ℹ️ Nothing to download yet.")
 
