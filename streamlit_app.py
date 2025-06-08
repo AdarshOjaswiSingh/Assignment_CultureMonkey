@@ -140,7 +140,7 @@ def main():
         with col1:
             upload_data()
         with col2:
-            st.subheader("🎤 Interview Mode")
+            st.subheader("🎤 Matching Job Descriptions")
             database = load_database()
             matched_roles = []
             if st.session_state.resume_summary:
