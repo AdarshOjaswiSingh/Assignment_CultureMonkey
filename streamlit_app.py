@@ -279,41 +279,39 @@ def main():
             if st.button("📊 Visual Analysis"):
                 generate_visualizations(database)
 
-    elif options == "Download Conversation":
-        st.header("Download Interview Transcript and Resume Summary")
-        if "conversation" in st.session_state and st.session_state.conversation:
-            conversation_text = "\n".join([f"{speaker}: {text}" for speaker, text in st.session_state.conversation])
-            
-            # Ensure resume_summary is a string
-            resume_summary_text = ""
-            if st.session_state.resume_summary:
-                if isinstance(st.session_state.resume_summary, dict):
-                    # Convert the dictionary to a string format
-                    for section, content in st.session_state.resume_summary.items():
-                        resume_summary_text += f"{section}:\n{content}\n\n"
-                else:
-                    resume_summary_text = str(st.session_state.resume_summary)
-                
-            # Combine the resume summary and interview transcript
-            download_text = conversation_text
-            if resume_summary_text:
-                download_text += "\n\nResume Summary:\n" + resume_summary_text
-                
-            # Button for downloading the interview transcript with resume summary
-            st.download_button(label="Download Transcript with Resume Summary", 
-                               data=download_text, 
-                               file_name="interview_transcript_with_resume_summary.txt", 
-                               mime="text/plain")
-            
-            # Separate download button for the resume summary
-            if resume_summary_text:
-                st.download_button(label="Download Resume Summary Only", 
-                                   data=resume_summary_text, 
-                                   file_name="resume_summary.txt", 
-                                   mime="text/plain")
-        else:
-            st.warning("No conversation available to download.")
+    elif options == "⬇️ Download":
+    st.header("📥 Download Results")
+    
+    # Initialize flags
+    has_conversation = "conversation" in st.session_state and st.session_state.conversation
+    has_summary = "resume_summary" in st.session_state and st.session_state.resume_summary
 
+    if has_conversation or has_summary:
+        # Build transcript
+        transcript = ""
+        if has_conversation:
+            transcript = "\n".join([f"{role}: {text}" for role, text in st.session_state.conversation])
+        
+        # Build resume summary
+        resume_summary = ""
+        if has_summary:
+            if isinstance(st.session_state.resume_summary, dict):
+                resume_summary = "\n\n".join([f"{sec}:\n{cont}" for sec, cont in st.session_state.resume_summary.items()])
+            else:
+                resume_summary = str(st.session_state.resume_summary)
+
+        # Combine both
+        full_output = transcript
+        if resume_summary:
+            full_output += "\n\nResume Summary:\n" + resume_summary
+
+        # Show buttons
+        if full_output.strip():
+            st.download_button("💾 Download Full Report", data=full_output, file_name="interview_summary.txt", mime="text/plain")
+        if resume_summary.strip():
+            st.download_button("💾 Download Resume Summary", data=resume_summary, file_name="resume_summary.txt", mime="text/plain")
+    else:
+        st.info("ℹ️ Nothing to download yet. Please process a resume or interview first.")
 
 
 if __name__ == "__main__":
