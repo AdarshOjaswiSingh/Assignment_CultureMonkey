@@ -226,9 +226,9 @@ def main():
 
     if options == "🏠 Home":
         st.header("👋 Welcome")
-        st.write("Welcome! This app helps you analyze your resume and prepare for interviews with ease. Just upload your resume to get quick insights, personalized tips, and boost your chances of landing the job. 🌟
-It highlights your strengths, suggests improvements, and even matches your profile to job roles.
-Get started now and take a step closer to your dream career! 🚀")
+        st.write("This app helps you analyze your resume and prepare for interviews with ease. Just upload your resume to get quick insights, personalized tips, and boost your chances of landing the job. 🌟
+                    It highlights your strengths, suggests improvements, and even matches your profile to job roles.
+                        Get started now and take a step closer to your dream career! 🚀")
 
     elif options == "ℹ️ About":
         st.header("📚 About This App")
