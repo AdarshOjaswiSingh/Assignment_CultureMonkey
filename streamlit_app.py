@@ -9,7 +9,7 @@ import sys
 
 DB_PATH = "dataset_cultureMonkey.xlsx"
 
-#  ========== File Text Extractors ==========
+# ========== File Text Extractors ==========
 def extract_pdf_text(file):
     try:
         reader = PdfReader(file)
@@ -33,8 +33,7 @@ def extract_resume_details(text):
         "Skills": ["Skills", "Technical Skills", "Core Competencies"],
         "Achievements": ["Achievements", "Accomplishments", "Key Highlights"],
         "Experience": ["Experience", "Work Experience", "Professional Experience"],
-        "Projects": ["Projects", "Key Projects", "Academic Projects"],
-        "Education": ["Education", "Academic Background", "Qualifications"]
+        "Projects": ["Projects", "Key Projects", "Academic Projects"]
     }
     extracted_info = {key: [] for key in summary_sections}
     current_section = None
@@ -47,23 +46,9 @@ def extract_resume_details(text):
         else:
             if current_section:
                 extracted_info[current_section].append(line)
-
-    # Compute dummy trend scores for skills (replace with actual logic if needed)
-    skills_list = extracted_info.get("Skills", [])
-    skill_objects = []
-    for skill in skills_list:
-        if skill:
-            skill_objects.append({
-                "skill": skill,
-                "category": "established",  # You can define logic to categorize skills
-                "trend_score": round(0.7 + 0.3 * hash(skill) % 100 / 100, 2)  # Dummy trend_score
-            })
-
     formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
-    if skill_objects:
-        formatted_output["Skills_JSON"] = skill_objects
-
     return formatted_output if formatted_output else "No structured data found. Please label resume sections clearly."
+
 # ========== Resume Upload Logic ==========
 def upload_data():
     st.subheader("📤 Upload Resume")
