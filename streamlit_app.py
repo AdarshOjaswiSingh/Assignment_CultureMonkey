@@ -160,8 +160,14 @@ def generate_visualizations(job_df):
             st.warning("Required columns 'seniority_level' or 'job_description_text' are missing in the dataset.")
             entry_texts = ""
 
-        senior_texts = job_df[job_df['seniority_level'].str.lower().str.contains("senior")]['job_description_text'].dropna().str.cat(sep=' ')
+        if 'seniority_level' in job_df.columns and 'job_description_text' in job_df.columns:
+            filtered_df = job_df[job_df['seniority_level'].fillna("").astype(str).str.lower().str.contains("senior", na=False)]
+            senior_texts = filtered_df['job_description_text'].dropna().astype(str).str.cat(sep=' ')
+        else:
+            st.warning("Required columns 'seniority_level' or 'job_description_text' are missing.")
+            senior_texts = ""
 
+        
         entry_vectorizer = TfidfVectorizer(stop_words='english', max_features=50)
         entry_features = entry_vectorizer.fit_transform([entry_texts])
         entry_words = entry_vectorizer.get_feature_names_out()
