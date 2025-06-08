@@ -234,7 +234,12 @@ def main():
             database = load_database()
             matched_roles = []
             if st.session_state.resume_summary:
-                resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
+                resume_text = ""
+                if st.session_state.resume_summary:
+                    if isinstance(st.session_state.resume_summary, dict):
+                        resume_text = "\n".join(st.session_state.resume_summary.values())
+                    else:
+                        resume_text = str(st.session_state.resume_summary)
                 matched_roles = match_resume_to_roles(resume_text, database)
             selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist())
             if st.button("▶️ Start Interview"):
