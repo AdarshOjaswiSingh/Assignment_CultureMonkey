@@ -153,7 +153,13 @@ def generate_visualizations(job_df):
         st.pyplot(fig)
 
     if "job_description_text" in job_df.columns and "seniority_level" in job_df.columns:
-        entry_texts = job_df[job_df['seniority_level'].fillna("").astype(str).str.lower().str.contains("entry")]['job_description_text'].dropna().astype(str).str.cat(sep=' ')
+        if 'seniority_level' in job_df.columns and 'job_description_text' in job_df.columns:
+            filtered_df = job_df[job_df['seniority_level'].fillna("").astype(str).str.lower().str.contains("entry", na=False)]
+            entry_texts = filtered_df['job_description_text'].dropna().astype(str).str.cat(sep=' ')
+        else:
+            st.warning("Required columns 'seniority_level' or 'job_description_text' are missing in the dataset.")
+            entry_texts = ""
+
         senior_texts = job_df[job_df['seniority_level'].str.lower().str.contains("senior")]['job_description_text'].dropna().str.cat(sep=' ')
 
         entry_vectorizer = TfidfVectorizer(stop_words='english', max_features=50)
