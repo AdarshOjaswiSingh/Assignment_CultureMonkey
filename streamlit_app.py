@@ -5,7 +5,8 @@ from PyPDF2 import PdfReader
 from docx import Document
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import sys
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 DB_PATH = "dataset_cultureMonkey.xlsx"
 
@@ -49,23 +50,6 @@ def extract_resume_details(text):
     formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
     return formatted_output if formatted_output else "No structured data found. Please label resume sections clearly."
 
-# Compute dummy trend scores for skills (replace with actual logic if needed)
-    skills_list = extracted_info.get("Skills", [])
-    skill_objects = []
-    for skill in skills_list:
-        if skill:
-            skill_objects.append({
-                "skill": skill,
-                "category": "established",
-                "trend_score": round(0.7 + 0.3 * hash(skill) % 100 / 100, 2)
-            })
-
-    formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
-    if skill_objects:
-        formatted_output["Skills_JSON"] = skill_objects
-
-    return formatted_output if formatted_output else "No structured data found. Please label resume sections clearly."
-    
 # ========== Resume Upload Logic ==========
 def upload_data():
     st.subheader("📤 Upload Resume")
@@ -124,6 +108,61 @@ def match_resume_to_roles(resume_text, job_df, top_n=3):
     matched_roles = [roles[i] for i in top_indices]
     return matched_roles
 
+# ========== Visualization ==========
+def generate_visualizations(job_df):
+    if job_df.empty:
+        st.warning("Dataset is empty or missing")
+        return
+
+    st.subheader("📊 Visual Analysis")
+
+    # Skills by seniority
+    if "experience_level" in job_df.columns and "key_skills" in job_df.columns:
+        entry_skills = job_df[job_df['experience_level'].str.lower().str.contains("entry")]['key_skills'].dropna().str.split(",").explode().str.strip()
+        mid_senior_skills = job_df[job_df['experience_level'].str.lower().str.contains("mid")]['key_skills'].dropna().str.split(",").explode().str.strip()
+        skill_counts = pd.DataFrame({
+            'Entry Level': entry_skills.value_counts(),
+            'Mid-Senior Level': mid_senior_skills.value_counts()
+        }).fillna(0).astype(int)
+        st.write("### 🔍 Skill Comparison (Entry vs. Mid-Senior Level)")
+        fig, ax = plt.subplots(figsize=(10, 5))
+        skill_counts.nlargest(10, ['Entry Level', 'Mid-Senior Level']).plot(kind='bar', ax=ax)
+        st.pyplot(fig)
+
+    # Location-based distribution
+    if "location" in job_df.columns:
+        st.write("### 🗺️ Geographic Distribution of Jobs")
+        location_counts = job_df['location'].dropna().value_counts().head(10)
+        fig, ax = plt.subplots()
+        sns.barplot(x=location_counts.values, y=location_counts.index, ax=ax)
+        st.pyplot(fig)
+
+    # Salary patterns
+    if "salary" in job_df.columns:
+        st.write("### 💰 Salary Distribution")
+        job_df['salary'] = pd.to_numeric(job_df['salary'], errors='coerce')
+        fig, ax = plt.subplots()
+        sns.histplot(job_df['salary'].dropna(), bins=20, kde=True, ax=ax)
+        st.pyplot(fig)
+
+    # Pie chart for experience levels
+    if "experience_level" in job_df.columns:
+        st.write("### 🧑‍💼 Experience Level Distribution")
+        exp_counts = job_df['experience_level'].value_counts()
+        fig, ax = plt.subplots()
+        ax.pie(exp_counts.values, labels=exp_counts.index, autopct='%1.1f%%', startangle=90)
+        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        st.pyplot(fig)
+
+    # Pie chart for job types (if available)
+    if "job_type" in job_df.columns:
+        st.write("### 📌 Job Type Distribution")
+        type_counts = job_df['job_type'].value_counts()
+        fig, ax = plt.subplots()
+        ax.pie(type_counts.values, labels=type_counts.index, autopct='%1.1f%%', startangle=90)
+        ax.axis('equal')
+        st.pyplot(fig)
+
 # ========== Streamlit Main UI ==========
 def main():
     st.set_page_config(page_title="🤖 AI Interview Assistant", layout="wide")
@@ -163,7 +202,13 @@ def main():
             if st.session_state.resume_summary:
                 resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
                 matched_roles = match_resume_to_roles(resume_text, database)
+
             selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist())
+
+            # Visualization added here
+            if not database.empty:
+                generate_visualizations(database)
+
             if st.button("▶️ Start Interview"):
                 if selected_role:
                     st.session_state.role = selected_role
@@ -172,6 +217,7 @@ def main():
                     if st.session_state.transcripts:
                         st.session_state.current_question = st.session_state.transcripts.pop(0)
                         st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
+
             if st.session_state.get("current_question"):
                 st.write(f"**👔 Interviewer:** {st.session_state.current_question}")
                 answer = st.text_area("✍️ Your Answer:")
