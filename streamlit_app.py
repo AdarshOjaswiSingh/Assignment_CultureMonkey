@@ -5,8 +5,7 @@ from PyPDF2 import PdfReader
 from docx import Document
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import matplotlib.pyplot as plt
-import seaborn as sns
+import sys
 
 DB_PATH = "dataset_cultureMonkey.xlsx"
 
@@ -50,6 +49,23 @@ def extract_resume_details(text):
     formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
     return formatted_output if formatted_output else "No structured data found. Please label resume sections clearly."
 
+# Compute dummy trend scores for skills (replace with actual logic if needed)
+    skills_list = extracted_info.get("Skills", [])
+    skill_objects = []
+    for skill in skills_list:
+        if skill:
+            skill_objects.append({
+                "skill": skill,
+                "category": "established",
+                "trend_score": round(0.7 + 0.3 * hash(skill) % 100 / 100, 2)
+            })
+
+    formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
+    if skill_objects:
+        formatted_output["Skills_JSON"] = skill_objects
+
+    return formatted_output if formatted_output else "No structured data found. Please label resume sections clearly."
+    
 # ========== Resume Upload Logic ==========
 def upload_data():
     st.subheader("📤 Upload Resume")
@@ -163,6 +179,7 @@ def generate_visualizations(job_df):
         ax.axis('equal')
         st.pyplot(fig)
 
+
 # ========== Streamlit Main UI ==========
 def main():
     st.set_page_config(page_title="🤖 AI Interview Assistant", layout="wide")
@@ -202,12 +219,33 @@ def main():
             if st.session_state.resume_summary:
                 resume_text = "\n".join(st.session_state.resume_summary.values()) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
                 matched_roles = match_resume_to_roles(resume_text, database)
-
             selected_role = st.selectbox("🔍 Select matched role:", matched_roles or database["job_title"].dropna().unique().tolist())
-
-            # Visualization added here
-            if not database.empty:
-                generate_visualizations(database)
+            if st.button("▶️ Start Interview"):
+                if selected_role:
+                    st.session_state.role = selected_role
+                    st.session_state.conversation = []
+                    st.session_state.transcripts = database[database["job_title"] == selected_role]["job_description_text"].dropna().tolist()
+                    if st.session_state.transcripts:
+                        st.session_state.current_question = st.session_state.transcripts.pop(0)
+                        st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
+            if st.session_state.get("current_question"):
+                st.write(f"**👔 Interviewer:** {st.session_state.current_question}")
+                answer = st.text_area("✍️ Your Answer:")
+                if st.button("📤 Submit Response"):
+                    if answer.strip():
+                        st.session_state.conversation.append(("Candidate", answer))
+                        if st.session_state.transcripts:
+                            st.session_state.current_question = st.session_state.transcripts.pop(0)
+                            st.session_state.conversation.append(("Interviewer", st.session_state.current_question))
+                        else:
+                            st.success("🎉 Interview complete!")
+                            st.session_state.current_question = None
+                    else:
+                        st.warning("⚠️ Answer cannot be empty.")
+                        
+                        # Visualization added here
+                    if not database.empty:
+                        generate_visualizations(database)
 
             if st.button("▶️ Start Interview"):
                 if selected_role:
