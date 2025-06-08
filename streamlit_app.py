@@ -42,13 +42,14 @@ def extract_resume_details(text):
     current_section = None
     for line in lines:
         line = line.strip()
+        found_section = False
         for section, keywords in summary_sections.items():
             if any(line.lower().startswith(keyword.lower()) for keyword in keywords):
                 current_section = section
+                found_section = True
                 break
-        else:
-            if current_section:
-                extracted_info[current_section].append(line)
+        if not found_section and current_section:
+            extracted_info[current_section].append(line)
 
     formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
 
@@ -152,11 +153,21 @@ def generate_visualizations(job_df):
         st.pyplot(fig)
 
     if "job_description_text" in job_df.columns and "seniority_level" in job_df.columns:
-        seniority_clean = job_df['seniority_level'].fillna("").str.lower()
+        if 'seniority_level' in job_df.columns and 'job_description_text' in job_df.columns:
+            filtered_df = job_df[job_df['seniority_level'].fillna("").astype(str).str.lower().str.contains("entry", na=False)]
+            entry_texts = filtered_df['job_description_text'].dropna().astype(str).str.cat(sep=' ')
+        else:
+            st.warning("Required columns 'seniority_level' or 'job_description_text' are missing in the dataset.")
+            entry_texts = ""
 
-        entry_texts = job_df[seniority_clean.str.contains("entry")]['job_description_text'].dropna().str.cat(sep=' ')
-        senior_texts = job_df[seniority_clean.str.contains("senior")]['job_description_text'].dropna().str.cat(sep=' ')
+        if 'seniority_level' in job_df.columns and 'job_description_text' in job_df.columns:
+            filtered_df = job_df[job_df['seniority_level'].fillna("").astype(str).str.lower().str.contains("senior", na=False)]
+            senior_texts = filtered_df['job_description_text'].dropna().astype(str).str.cat(sep=' ')
+        else:
+            st.warning("Required columns 'seniority_level' or 'job_description_text' are missing.")
+            senior_texts = ""
 
+        
         entry_vectorizer = TfidfVectorizer(stop_words='english', max_features=50)
         entry_features = entry_vectorizer.fit_transform([entry_texts])
         entry_words = entry_vectorizer.get_feature_names_out()
@@ -236,7 +247,7 @@ def main():
             if st.session_state.resume_summary:
                 resume_text = ""
                 if isinstance(st.session_state.resume_summary, dict):
-                    resume_text = "\n".join(st.session_state.resume_summary.values())
+                    resume_text = "\n".join(str(v) for v in st.session_state.resume_summary.values())
                 else:
                     resume_text = str(st.session_state.resume_summary)
                 matched_roles = match_resume_to_roles(resume_text, database)
@@ -269,21 +280,39 @@ def main():
                 generate_visualizations(database)
 
     elif options == "⬇️ Download":
-        st.header("📥 Download Results")
-        if st.session_state.conversation:
+    st.header("📥 Download Results")
+
+    # Check if session state contains data
+    has_conversation = "conversation" in st.session_state and st.session_state.conversation
+    has_summary = "resume_summary" in st.session_state and st.session_state.resume_summary
+
+    if has_conversation or has_summary:
+        # Combine conversation transcript
+        transcript = ""
+        if has_conversation:
             transcript = "\n".join([f"{role}: {text}" for role, text in st.session_state.conversation])
-            resume_summary = ""
-            if st.session_state.resume_summary:
-                if isinstance(st.session_state.resume_summary, dict):
-                    resume_summary = "\n\n".join([f"{sec}:\n{cont}" for sec, cont in st.session_state.resume_summary.items()])
-                else:
-                    resume_summary = str(st.session_state.resume_summary)
-            full_output = transcript + ("\n\nResume Summary:\n" + resume_summary if resume_summary else "")
+
+        # Format resume summary
+        resume_summary = ""
+        if has_summary:
+            if isinstance(st.session_state.resume_summary, dict):
+                resume_summary = "\n\n".join([f"{sec}:\n{cont}" for sec, cont in st.session_state.resume_summary.items()])
+            else:
+                resume_summary = str(st.session_state.resume_summary)
+
+        # Create full combined output
+        full_output = transcript
+        if resume_summary:
+            full_output += "\n\nResume Summary:\n" + resume_summary
+
+        # Download buttons
+        if full_output.strip():
             st.download_button("💾 Download Full Report", data=full_output, file_name="interview_summary.txt", mime="text/plain")
-            if resume_summary:
-                st.download_button("💾 Download Resume Summary", data=resume_summary, file_name="resume_summary.txt", mime="text/plain")
-        else:
-            st.info("ℹ️ Nothing to download yet.")
+        if resume_summary.strip():
+            st.download_button("💾 Download Resume Summary", data=resume_summary, file_name="resume_summary.txt", mime="text/plain")
+    else:
+        st.info("ℹ️ Nothing to download yet. Please process a resume or interview first.")
+
 
 if __name__ == "__main__":
     main()
