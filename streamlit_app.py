@@ -49,6 +49,23 @@ def extract_resume_details(text):
     formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
     return formatted_output if formatted_output else "No structured data found. Please label resume sections clearly."
 
+# Compute dummy trend scores for skills (replace with actual logic if needed)
+    skills_list = extracted_info.get("Skills", [])
+    skill_objects = []
+    for skill in skills_list:
+        if skill:
+            skill_objects.append({
+                "skill": skill,
+                "category": "established",
+                "trend_score": round(0.7 + 0.3 * hash(skill) % 100 / 100, 2)
+            })
+
+    formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
+    if skill_objects:
+        formatted_output["Skills_JSON"] = skill_objects
+
+    return formatted_output if formatted_output else "No structured data found. Please label resume sections clearly."
+    
 # ========== Resume Upload Logic ==========
 def upload_data():
     st.subheader("📤 Upload Resume")
