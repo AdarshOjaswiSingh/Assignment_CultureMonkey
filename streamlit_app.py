@@ -207,8 +207,8 @@ def generate_visualizations(job_df):
 
 # ========== Streamlit Main UI ==========
 def main():
-    st.set_page_config(page_title="🤖 AI Interview Assistant", layout="wide")
-    st.title("🤖 AI Interview Assistant")
+    st.set_page_config(page_title="🤖 Job Market Analysis System ", layout="wide")
+    st.title("🤖 Job Market Analysis System")
     st.markdown("Upload your resume, match to roles, and practice your interview! 🚀")
     st.sidebar.title("🛍️ Navigation")
     options = st.sidebar.radio("Choose a section:", ["🏠 Home", "📄 Resume & Interview", "⬇️ Download", "ℹ️ About"])
