@@ -42,13 +42,14 @@ def extract_resume_details(text):
     current_section = None
     for line in lines:
         line = line.strip()
+        found_section = False
         for section, keywords in summary_sections.items():
             if any(line.lower().startswith(keyword.lower()) for keyword in keywords):
                 current_section = section
+                found_section = True
                 break
-        else:
-            if current_section:
-                extracted_info[current_section].append(line)
+        if not found_section and current_section:
+            extracted_info[current_section].append(line)
 
     formatted_output = {key: "\n".join(value) for key, value in extracted_info.items() if value}
 
@@ -152,10 +153,8 @@ def generate_visualizations(job_df):
         st.pyplot(fig)
 
     if "job_description_text" in job_df.columns and "seniority_level" in job_df.columns:
-        seniority_clean = job_df['seniority_level'].fillna("").str.lower()
-
-        entry_texts = job_df[seniority_clean.str.contains("entry")]['job_description_text'].dropna().str.cat(sep=' ')
-        senior_texts = job_df[seniority_clean.str.contains("senior")]['job_description_text'].dropna().str.cat(sep=' ')
+        entry_texts = job_df[job_df['seniority_level'].str.lower().str.contains("entry")]['job_description_text'].dropna().str.cat(sep=' ')
+        senior_texts = job_df[job_df['seniority_level'].str.lower().str.contains("senior")]['job_description_text'].dropna().str.cat(sep=' ')
 
         entry_vectorizer = TfidfVectorizer(stop_words='english', max_features=50)
         entry_features = entry_vectorizer.fit_transform([entry_texts])
@@ -236,7 +235,7 @@ def main():
             if st.session_state.resume_summary:
                 resume_text = ""
                 if isinstance(st.session_state.resume_summary, dict):
-                    resume_text = "\n".join(st.session_state.resume_summary.values())
+                    resume_text = "\n".join(str(v) for v in st.session_state.resume_summary.values())
                 else:
                     resume_text = str(st.session_state.resume_summary)
                 matched_roles = match_resume_to_roles(resume_text, database)
@@ -273,7 +272,7 @@ def main():
         if st.session_state.conversation:
             transcript = "\n".join([f"{role}: {text}" for role, text in st.session_state.conversation])
             resume_summary = ""
-            if st.session_state.resume_summary:
+            if "resume_summary" in st.session_state and st.session_state.resume_summary:
                 if isinstance(st.session_state.resume_summary, dict):
                     resume_summary = "\n\n".join([f"{sec}:\n{cont}" for sec, cont in st.session_state.resume_summary.items()])
                 else:
