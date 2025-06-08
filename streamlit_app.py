@@ -236,7 +236,11 @@ def main():
             if st.session_state.resume_summary:
                 resume_text = ""
                 if isinstance(st.session_state.resume_summary, dict):
-                    resume_text = "\n".join(st.session_state.resume_summary.values())
+                    if isinstance(st.session_state.resume_summary, dict):
+                        resume_text = "\n".join(st.session_state.resume_summary.values())
+                    else:
+                        resume_text = str(st.session_state.resume_summary)
+
                 else:
                     resume_text = str(st.session_state.resume_summary)
                 matched_roles = match_resume_to_roles(resume_text, database)
