@@ -270,6 +270,7 @@ def main():
     st.markdown("---")
     st.markdown("Built by **Adarsh Ojaswi Singh** as part of a recruitment system simulation. ✨")
 
+
     elif options == "📄 Resume & Interview":
         col1, col2 = st.columns(2)
         with col1:
