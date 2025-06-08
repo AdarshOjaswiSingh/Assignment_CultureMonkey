@@ -280,21 +280,58 @@ def main():
                 generate_visualizations(database)
 
     elif options == "⬇️ Download":
-        st.header("📥 Download Results")
-        if st.session_state.conversation:
-            transcript = "\n".join([f"{role}: {text}" for role, text in st.session_state.conversation])
-            resume_summary = ""
-            if "resume_summary" in st.session_state and st.session_state.resume_summary:
-                if isinstance(st.session_state.resume_summary, dict):
-                    resume_summary = "\n\n".join([f"{sec}:\n{cont}" for sec, cont in st.session_state.resume_summary.items()])
-                else:
-                    resume_summary = str(st.session_state.resume_summary)
-            full_output = transcript + ("\n\nResume Summary:\n" + resume_summary if resume_summary else "")
-            st.download_button("💾 Download Full Report", data=full_output, file_name="interview_summary.txt", mime="text/plain")
-            if resume_summary:
-                st.download_button("💾 Download Resume Summary", data=resume_summary, file_name="resume_summary.txt", mime="text/plain")
-        else:
-            st.info("ℹ️ Nothing to download yet.")
+    st.header("📥 Download Results")
+
+    conversation = st.session_state.get("conversation", [])
+    resume_summary = st.session_state.get("resume_summary", "")
+
+    if conversation or resume_summary:
+        # Process conversation
+        transcript = ""
+        if conversation:
+            transcript = "\n".join([f"{role}: {text}" for role, text in conversation])
+
+        # Process resume summary
+        resume_summary_text = ""
+        if resume_summary:
+            if isinstance(resume_summary, dict):
+                resume_summary_text = "\n\n".join([f"{sec}:\n{cont}" for sec, cont in resume_summary.items()])
+            else:
+                resume_summary_text = str(resume_summary)
+
+        # Combine for full report
+        full_output = ""
+        if transcript:
+            full_output += "🗣️ Interview Transcript:\n" + transcript
+        if resume_summary_text:
+            full_output += "\n\n📄 Resume Summary:\n" + resume_summary_text
+
+        # Download buttons
+        st.download_button(
+            "💾 Download Full Report",
+            data=full_output,
+            file_name="interview_resume_report.txt",
+            mime="text/plain"
+        )
+
+        if transcript:
+            st.download_button(
+                "🗣️ Download Only Transcript",
+                data=transcript,
+                file_name="interview_transcript.txt",
+                mime="text/plain"
+            )
+
+        if resume_summary_text:
+            st.download_button(
+                "📄 Download Only Resume Summary",
+                data=resume_summary_text,
+                file_name="resume_summary.txt",
+                mime="text/plain"
+            )
+
+    else:
+        st.info("ℹ️ Nothing to download yet. Please complete an interview or upload a resume.")
 
 if __name__ == "__main__":
     main()
