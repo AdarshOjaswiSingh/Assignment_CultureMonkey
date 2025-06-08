@@ -274,8 +274,12 @@ def main():
         if st.session_state.conversation:
             transcript = "\n".join([f"{role}: {text}" for role, text in st.session_state.conversation])
             resume_summary = ""
-            if st.session_state.resume_summary:
-                resume_summary = "\n\n".join([f"{sec}:\n{cont}" for sec, cont in st.session_state.resume_summary.items()]) if isinstance(st.session_state.resume_summary, dict) else str(st.session_state.resume_summary)
+            if "resume_summary" in st.session_state and st.session_state.resume_summary:
+                if isinstance(st.session_state.resume_summary, dict):
+                    resume_summary = "\n\n".join([f"{sec}:\n{cont}" for sec, cont in st.session_state.resume_summary.items()])
+                else:
+                    resume_summary = str(st.session_state.resume_summary)
+            
             full_output = transcript + ("\n\nResume Summary:\n" + resume_summary if resume_summary else "")
             st.download_button("💾 Download Full Report", data=full_output, file_name="interview_summary.txt", mime="text/plain")
             if resume_summary:
